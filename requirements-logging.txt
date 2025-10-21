@@ -1,0 +1,5 @@
+# prometheus-py
+# For querying Prometheus
+prometheus-api-client==0.5.3
+
+# Add to existing requirements.txt
