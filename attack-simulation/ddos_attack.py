@@ -11,7 +11,7 @@ import threading
 from datetime import datetime
 
 # Configuration
-TARGET_URL = "http://192.168.49.2:30080"  # Minikube service URL
+TARGET_URL = "http:// :"  # Minikube service URL
 NUM_THREADS = 50  # Number of concurrent attack threads
 DURATION_SECONDS = 60  # Attack duration
 REQUESTS_PER_THREAD = 1000
@@ -81,4 +81,5 @@ def main():
 
 if __name__ == "__main__":
     main()
+
 
