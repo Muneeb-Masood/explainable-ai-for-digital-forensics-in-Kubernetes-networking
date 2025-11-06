@@ -11,7 +11,11 @@ import threading
 from datetime import datetime
 
 # Configuration
-TARGET_URL = "http:// :"  # Minikube service URL
+TARGET_URL = "http://localhost:8000"  # Local test server
+# Alternative targets:
+# TARGET_URL = "http://192.168.49.2:30080"  # Minikube service
+# TARGET_URL = "http://example.com"  # Internet target (DON'T DO THIS!)
+
 NUM_THREADS = 50  # Number of concurrent attack threads
 DURATION_SECONDS = 60  # Attack duration
 REQUESTS_PER_THREAD = 1000

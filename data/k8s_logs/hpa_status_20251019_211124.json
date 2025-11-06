@@ -1,7 +1,0 @@
-{
-  "name": "web-app-hpa",
-  "current_replicas": 2,
-  "desired_replicas": 2,
-  "current_cpu": 0,
-  "target_cpu": 50
-}

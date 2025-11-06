@@ -1,105 +1,126 @@
 """
-Simple test script to verify model predictions
+Test script to make predictions on real data
 
-Run this after training the model to test it with different scenarios.
+Run this to test the model with your actual network traffic data.
 """
 
 import joblib
 import pandas as pd
 import os
+import numpy as np
 
 def load_model():
     """Load the trained model"""
-    model_path = 'ai-model/saved_models/attack_detector.pkl'
-    if not os.path.exists(model_path):
-        print("❌ Model not found! Please train it first:")
-        print("   python ai-model/train_model.py")
-        return None
+    # Try different model paths
+    model_paths = [
+        'ai-model/saved_models/dvwa_attack_detector_top20.pkl',
+        'ai-model/saved_models/dvwa_attack_detector.pkl',
+        'ai-model/saved_models/rf_model.pkl',
+        'ai-model/saved_models/attack_detector.pkl'
+    ]
     
-    model = joblib.load(model_path)
-    return model
+    for model_path in model_paths:
+        if os.path.exists(model_path):
+            print(f"✓ Loading model: {model_path}")
+            model = joblib.load(model_path)
+            return model, model_path
+    
+    print("❌ No model found! Please train it first:")
+    print("   python ai-model/train_model.py")
+    return None, None
 
-def test_scenarios():
-    """Test the model with different traffic scenarios"""
+def test_real_data():
+    """Test the model with real network traffic data"""
     
-    model = load_model()
+    model, model_path = load_model()
     if model is None:
         return
     
-    print("="*60)
-    print("TESTING AI MODEL WITH DIFFERENT SCENARIOS")
-    print("="*60)
+    # Load the processed data
+    data_path = 'ai-model/final_top20_features.csv'
+    if not os.path.exists(data_path):
+        print(f"❌ Data file not found: {data_path}")
+        print("Please run the feature extraction pipeline first.")
+        return
     
-    # Scenario 1: Normal traffic
-    normal_traffic = pd.DataFrame([{
-        'requests_per_second': 45,
-        'avg_response_time': 95,
-        'error_rate': 1.2,
-        'port_scan_count': 0,
-        'unique_ips': 25,
-        'cpu_usage': 0.2,
-        'memory_usage': 0.4,
-        'network_bytes': 15000
-    }])
+    print(f"✓ Loading data: {data_path}")
+    df = pd.read_csv(data_path)
     
-    # Scenario 2: DDoS attack
-    ddos_attack = pd.DataFrame([{
-        'requests_per_second': 750,
-        'avg_response_time': 650,
-        'error_rate': 22,
-        'port_scan_count': 0,
-        'unique_ips': 300,
-        'cpu_usage': 0.85,
-        'memory_usage': 0.75,
-        'network_bytes': 350000
-    }])
+    print("="*70)
+    print("TESTING AI MODEL WITH REAL NETWORK TRAFFIC DATA")
+    print("="*70)
+    print(f"\nDataset: {df.shape[0]} flows with {df.shape[1]} features")
+    print(f"Model: {os.path.basename(model_path)}")
     
-    # Scenario 3: Port scanning
-    port_scan = pd.DataFrame([{
-        'requests_per_second': 120,
-        'avg_response_time': 45,
-        'error_rate': 3,
-        'port_scan_count': 85,
-        'unique_ips': 3,
-        'cpu_usage': 0.25,
-        'memory_usage': 0.35,
-        'network_bytes': 35000
-    }])
+    # Make predictions
+    print("\n🔮 Making predictions...")
+    predictions = model.predict(df)
     
-    scenarios = [
-        ("Normal Traffic", normal_traffic),
-        ("DDoS Attack", ddos_attack),
-        ("Port Scanning", port_scan)
-    ]
+    # Get prediction probabilities if available
+    try:
+        probabilities = model.predict_proba(df)
+        has_proba = True
+    except:
+        has_proba = False
     
-    labels = ['Normal', 'DDoS', 'Port Scan']
+    # Analyze predictions
+    unique, counts = np.unique(predictions, return_counts=True)
     
-    for name, data in scenarios:
-        print(f"\n{'='*60}")
-        print(f"Scenario: {name}")
-        print('='*60)
+    print("\n" + "="*70)
+    print("PREDICTION SUMMARY")
+    print("="*70)
+    
+    for label, count in zip(unique, counts):
+        percentage = (count / len(predictions)) * 100
+        bar = '█' * int(percentage / 2)
+        print(f"  Class {label}: {count:4d} flows ({percentage:5.1f}%) {bar}")
+    
+    # Show detailed stats
+    print("\n" + "="*70)
+    print("DETAILED STATISTICS")
+    print("="*70)
+    
+    for label in unique:
+        mask = predictions == label
+        count = np.sum(mask)
         
-        # Show input features
-        print("\nInput Features:")
-        for col in data.columns:
-            print(f"  {col}: {data[col].values[0]:.2f}")
+        print(f"\n📊 Class {label} ({count} flows):")
         
-        # Make prediction
-        prediction = model.predict(data)[0]
-        probabilities = model.predict_proba(data)[0]
+        if has_proba:
+            avg_confidence = np.mean(np.max(probabilities[mask], axis=1))
+            print(f"   Average confidence: {avg_confidence:.2%}")
         
-        # Show results
-        print(f"\n🎯 Prediction: {labels[prediction]}")
-        print("\nConfidence Scores:")
-        for i, label in enumerate(labels):
-            bar = '█' * int(probabilities[i] * 50)
-            print(f"  {label:12} {probabilities[i]:6.2%} {bar}")
+        # Show some sample feature statistics for this class
+        class_data = df[mask]
+        print(f"   Sample feature means:")
+        for col in df.columns[:5]:  # Show first 5 features
+            print(f"     {col}: {class_data[col].mean():.2f}")
     
-    print("\n" + "="*60)
-    print("Testing completed!")
-    print("="*60)
-    print("\n✅ The model is working correctly!")
-    print("   You can now run: python explainable-ai/explain_predictions.py")
+    # Show some individual predictions
+    print("\n" + "="*70)
+    print("SAMPLE PREDICTIONS (First 10 flows)")
+    print("="*70)
+    
+    for i in range(min(10, len(df))):
+        pred = predictions[i]
+        print(f"\nFlow #{i+1}: Predicted Class = {pred}")
+        
+        if has_proba:
+            proba = probabilities[i]
+            print(f"  Confidence: {np.max(proba):.2%}")
+            print(f"  Class probabilities: {proba}")
+    
+    # Save predictions
+    output_path = 'ai-model/predictions_output.csv'
+    df['prediction'] = predictions
+    if has_proba:
+        for i in range(probabilities.shape[1]):
+            df[f'prob_class_{i}'] = probabilities[:, i]
+    
+    df.to_csv(output_path, index=False)
+    print("\n" + "="*70)
+    print(f"✅ Predictions saved to: {output_path}")
+    print("="*70)
 
 if __name__ == "__main__":
-    test_scenarios()
+    test_real_data()

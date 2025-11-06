@@ -11,8 +11,9 @@ Usage examples (PowerShell):
   python run_cicflowmeter_py.py --pcap attack_traffic.pcap --out cic_features_output.csv --top20 saved_models/dvwa_features_top20.txt --top20_out top20_features_for_model.csv
 
 Requirements:
-  - pip install --user cicflowmeter
-  - Ensure tcpdump.exe is in PATH (e.g., C:\\Tools) and accessible from the same terminal (tcpdump -h)
+    - pip install --user cicflowmeter
+    - Note: tcpdump is ONLY required when capturing live from an interface.
+        For offline PCAP/PCAPNG files (what we use here), tcpdump is NOT required.
 """
 
 from pathlib import Path
@@ -22,6 +23,11 @@ import sys
 
 
 def ensure_tcpdump():
+    """Check if tcpdump exists in PATH (used only for live capture).
+
+    CICFlowMeter can process offline PCAP/PCAPNG without tcpdump,
+    so we will not block execution if we're reading from a file.
+    """
     return shutil.which("tcpdump") is not None
 
 
@@ -77,9 +83,9 @@ def main():
     if not args.pcap.exists():
         print(f"ERROR: PCAP not found: {args.pcap}")
         sys.exit(2)
+    # For offline PCAP processing tcpdump is not needed; warn only if missing
     if not ensure_tcpdump():
-        print("ERROR: tcpdump not found in PATH. Ensure tcpdump.exe is installed and PATH includes its directory.")
-        sys.exit(3)
+        print("Warning: tcpdump not found in PATH. This is fine for offline PCAP processing.")
 
     print(f"Running CICFlowMeter on {args.pcap} -> {args.out}")
     args.out.parent.mkdir(parents=True, exist_ok=True)
