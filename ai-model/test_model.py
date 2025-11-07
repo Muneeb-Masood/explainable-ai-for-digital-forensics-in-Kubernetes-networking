@@ -11,8 +11,9 @@ import numpy as np
 
 def load_model():
     """Load the trained model"""
-    # Try different model paths
+    # Try different model paths (36-feature model first, then fallback to 20-feature)
     model_paths = [
+        'ai-model/saved_models/dvwa_attack_detector_36_features.pkl',
         'ai-model/saved_models/dvwa_attack_detector_top20.pkl',
         'ai-model/saved_models/dvwa_attack_detector.pkl',
         'ai-model/saved_models/rf_model.pkl',
@@ -26,7 +27,7 @@ def load_model():
             return model, model_path
     
     print("❌ No model found! Please train it first:")
-    print("   python ai-model/train_model.py")
+    print("   python ai-model/train_model_36_features.py")
     return None, None
 
 def test_real_data():
@@ -37,28 +38,50 @@ def test_real_data():
         return
     
     # Load the processed data
-    data_path = 'ai-model/final_top20_features.csv'
+    data_path = 'ai-model/final_model_input.csv'
     if not os.path.exists(data_path):
         print(f"❌ Data file not found: {data_path}")
-        print("Please run the feature extraction pipeline first.")
+        print("Please run the feature mapping and filtering pipeline first")
         return
     
     print(f"✓ Loading data: {data_path}")
     df = pd.read_csv(data_path)
     
+    # Determine which feature list to use based on model
+    if '36_features' in model_path:
+        features_list = 'ai-model/saved_models/dvwa_attack_detector_36_features_features.txt'
+    else:
+        features_list = 'ai-model/saved_models/dvwa_features_top20.txt'
+    
+    if os.path.exists(features_list):
+        with open(features_list, 'r') as f:
+            model_features = [line.strip() for line in f if line.strip()]
+        
+        # Add missing features as zeros
+        for feat in model_features:
+            if feat not in df.columns:
+                df[feat] = 0
+        
+        # Subset to only the features the model needs
+        df_model = df[model_features]
+        print(f"ℹ️  Using {len(model_features)} features (including K8s metrics)")
+    else:
+        df_model = df
+        print(f"⚠️  Could not find feature list, using all columns")
+    
     print("="*70)
     print("TESTING AI MODEL WITH REAL NETWORK TRAFFIC DATA")
     print("="*70)
-    print(f"\nDataset: {df.shape[0]} flows with {df.shape[1]} features")
+    print(f"\nDataset: {df.shape[0]} flows with {df_model.shape[1]} model features")
     print(f"Model: {os.path.basename(model_path)}")
     
     # Make predictions
     print("\n🔮 Making predictions...")
-    predictions = model.predict(df)
+    predictions = model.predict(df_model)
     
     # Get prediction probabilities if available
     try:
-        probabilities = model.predict_proba(df)
+        probabilities = model.predict_proba(df_model)
         has_proba = True
     except:
         has_proba = False
@@ -93,7 +116,7 @@ def test_real_data():
         # Show some sample feature statistics for this class
         class_data = df[mask]
         print(f"   Sample feature means:")
-        for col in df.columns[:5]:  # Show first 5 features
+        for col in df_model.columns[:5]:  # Show first 5 features
             print(f"     {col}: {class_data[col].mean():.2f}")
     
     # Show some individual predictions

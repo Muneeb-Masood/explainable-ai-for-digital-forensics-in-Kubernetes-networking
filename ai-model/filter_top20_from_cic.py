@@ -42,7 +42,7 @@ def main(cic_csv, features_txt, output_csv):
 
     # Reorder and keep only wanted
     out = df[wanted]
-    print(f"\nOutput shape (top-20 only): {out.shape}")
+    print(f"\nOutput shape: {out.shape}")
 
     output_csv.parent.mkdir(parents=True, exist_ok=True)
     out.to_csv(output_csv, index=False)
@@ -56,15 +56,15 @@ if __name__ == "__main__":
         "--features_txt",
         required=False,
         type=Path,
-        default=Path("ai-model/saved_models/dvwa_features_top20.txt"),
+        default=Path("ai-model/saved_models/features_35_with_k8s.txt"),
         help="Path to text file with one feature name per line",
     )
     p.add_argument(
         "--output_csv",
         required=False,
         type=Path,
-        default=Path("ai-model/top20_features_for_model.csv"),
-        help="Path to save the filtered top-20 CSV",
+        default=Path("ai-model/filtered_features.csv"),
+        help="Path to save the filtered CSV",
     )
     args = p.parse_args()
     main(args.cic_csv, args.features_txt, args.output_csv)
