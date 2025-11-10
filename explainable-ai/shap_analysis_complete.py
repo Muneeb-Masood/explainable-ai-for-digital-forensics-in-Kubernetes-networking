@@ -29,8 +29,8 @@ CLASS_NAMES = {
 
 def load_model_and_data():
     """Load the 36-feature model and feature list"""
-    model_path = 'ai-model/saved_models/dvwa_attack_detector_36_features.pkl'
-    features_path = 'ai-model/saved_models/features_35_with_k8s.txt'
+    model_path = '../ai-model/saved_models/dvwa_attack_detector_36_features.pkl'
+    features_path = '../ai-model/saved_models/features_35_with_k8s.txt'
     
     if not os.path.exists(model_path):
         print("❌ Model not found! Train it first:")
@@ -146,7 +146,7 @@ def analyze_dataset_1_training():
     shap_values = explainer(X_sample)
     
     # Create output directory
-    output_dir = 'explainable-ai/outputs'
+    output_dir = 'outputs'
     os.makedirs(output_dir, exist_ok=True)
     
     # Generate plots
@@ -192,7 +192,7 @@ def analyze_dataset_2_collected():
         return
     
     # Load collected data
-    data_path = 'ai-model/final_model_input.csv'
+    data_path = '../ai-model/final_model_input.csv'
     if not os.path.exists(data_path):
         print("❌ Collected data not found! Run the attack pipeline first.")
         return
@@ -216,7 +216,7 @@ def analyze_dataset_2_collected():
     shap_values = explainer(X)
     
     # Create output directory
-    output_dir = 'explainable-ai/outputs'
+    output_dir = 'outputs'
     os.makedirs(output_dir, exist_ok=True)
     
     # Generate plots
@@ -280,7 +280,7 @@ def analyze_dataset_3_merged():
         X_train = pd.DataFrame()
     
     # Collected data
-    collected_path = 'ai-model/final_model_input.csv'
+    collected_path = '../ai-model/final_model_input.csv'
     if os.path.exists(collected_path):
         X_collected = pd.read_csv(collected_path)
         X_collected['Source'] = 'Collected'
@@ -301,7 +301,7 @@ def analyze_dataset_3_merged():
     shap_values = explainer(X_features)
     
     # Create output directory
-    output_dir = 'explainable-ai/outputs'
+    output_dir = 'outputs'
     os.makedirs(output_dir, exist_ok=True)
     
     # Generate comparison plots
@@ -381,7 +381,7 @@ def analyze_dataset_3_merged():
 
 def generate_summary_report():
     """Generate a comprehensive summary report"""
-    output_dir = 'explainable-ai/outputs'
+    output_dir = 'outputs'
     
     report = """
 ================================================================================
@@ -440,7 +440,7 @@ COMPARISON PLOT:
 FILES GENERATED:
 ================================================================================
 
-All visualizations saved to: explainable-ai/outputs/
+All visualizations saved to: outputs/
   ✅ shap_summary_Training_Dataset.png
   ✅ shap_bar_Training_Dataset.png
   ✅ shap_waterfall_Training_Dataset.png
@@ -456,7 +456,7 @@ All visualizations saved to: explainable-ai/outputs/
 NEXT STEPS:
 ================================================================================
 
-1. Review all generated plots in explainable-ai/outputs/
+1. Review all generated plots in outputs/
 2. Compare training vs collected importance rankings
 3. Identify key features that detected your attack
 4. Use insights for forensic analysis and reporting
@@ -495,7 +495,7 @@ def main():
         print("\n" + "="*80)
         print("✅ ALL ANALYSES COMPLETE!")
         print("="*80)
-        print("\n📂 Check explainable-ai/outputs/ for all visualizations")
+        print("\n📂 Check outputs/ for all visualizations")
         print("📄 Read SHAP_Analysis_Report.txt for detailed summary")
         print("\n🎉 Explainable AI analysis finished successfully!")
         
