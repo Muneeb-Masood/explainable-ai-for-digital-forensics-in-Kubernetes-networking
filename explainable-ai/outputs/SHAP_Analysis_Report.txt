@@ -1,0 +1,79 @@
+
+================================================================================
+                 SHAP EXPLAINABILITY ANALYSIS SUMMARY REPORT
+================================================================================
+
+ANALYSIS COMPLETED ON THREE DATASETS:
+
+1. TRAINING DATASET (59,325 samples)
+   - Shows what features the model learned as important
+   - Visualizations: shap_summary_Training_Dataset.png
+                    shap_bar_Training_Dataset.png
+                    shap_waterfall_Training_Dataset.png
+
+2. COLLECTED ATTACK DATA (122 flows - Real Slowloris)
+   - Explains why our captured attack was detected
+   - Shows real-world feature patterns
+   - Visualizations: shap_summary_Collected_Attack.png
+                    shap_bar_Collected_Attack.png
+                    shap_waterfall_Collected_Attack.png
+
+3. MERGED ANALYSIS (Training + Collected)
+   - Compares training patterns with real attack
+   - Highlights differences between learned and actual patterns
+   - Visualizations: shap_summary_Merged_Analysis.png
+                    shap_bar_Merged_Analysis.png
+                    shap_comparison_training_vs_collected.png
+
+================================================================================
+HOW TO INTERPRET SHAP PLOTS:
+================================================================================
+
+SUMMARY PLOT (Beeswarm):
+  - Each dot is one sample
+  - X-axis: SHAP value (impact on prediction)
+  - Color: Feature value (red=high, blue=low)
+  - Y-axis: Features ordered by importance
+  - Shows: How each feature affects predictions
+
+BAR PLOT:
+  - Shows average absolute impact of each feature
+  - Higher bar = more important feature
+  - Easy to identify top contributing features
+
+WATERFALL PLOT:
+  - Shows one individual prediction
+  - Arrows show how each feature pushed prediction
+  - Red arrows push toward attack, blue toward normal
+
+COMPARISON PLOT:
+  - Left: What model learned from training
+  - Right: What we see in real attack
+  - Helps validate if model generalizes well
+
+================================================================================
+FILES GENERATED:
+================================================================================
+
+All visualizations saved to: explainable-ai/outputs/
+  ✅ shap_summary_Training_Dataset.png
+  ✅ shap_bar_Training_Dataset.png
+  ✅ shap_waterfall_Training_Dataset.png
+  ✅ shap_summary_Collected_Attack.png
+  ✅ shap_bar_Collected_Attack.png
+  ✅ shap_waterfall_Collected_Attack.png
+  ✅ shap_summary_Merged_Analysis.png
+  ✅ shap_bar_Merged_Analysis.png
+  ✅ shap_comparison_training_vs_collected.png
+  ✅ SHAP_Analysis_Report.txt (this file)
+
+================================================================================
+NEXT STEPS:
+================================================================================
+
+1. Review all generated plots in explainable-ai/outputs/
+2. Compare training vs collected importance rankings
+3. Identify key features that detected your attack
+4. Use insights for forensic analysis and reporting
+
+================================================================================
