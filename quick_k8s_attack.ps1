@@ -255,7 +255,7 @@ if (Test-Path "predictions_output.csv") {
     $normalFlows = ($predictions | Where-Object { $_.prediction -eq "0" }).Count
     $attackRate = if ($totalFlows -gt 0) { [math]::Round(($attackFlows / $totalFlows) * 100, 1) } else { 0 }
     
-    Write-Host "`n📊 DETECTION STATISTICS:" -ForegroundColor Yellow
+    Write-Host "`nDETECTION STATISTICS:" -ForegroundColor Yellow
     Write-Host "   Total flows analyzed: $totalFlows" -ForegroundColor White
     Write-Host "   Attack flows detected: $attackFlows" -ForegroundColor Red
     Write-Host "   Normal flows detected: $normalFlows" -ForegroundColor Green
@@ -269,11 +269,11 @@ if (Test-Path "predictions_output.csv") {
         [math]::Round(($predictions | Where-Object { $_.prediction -eq "0" } | ForEach-Object { [double]$_.prob_class_0 } | Measure-Object -Average).Average, 3) 
     } else { 0 }
     
-    Write-Host "`n🎯 CONFIDENCE ANALYSIS:" -ForegroundColor Yellow
+    Write-Host "`nCONFIDENCE ANALYSIS:" -ForegroundColor Yellow
     Write-Host "   Average attack confidence: $avgAttackConf" -ForegroundColor Red
     Write-Host "   Average normal confidence: $avgNormalConf" -ForegroundColor Green
     
-    Write-Host "`n📋 Sample predictions (first 10 rows):" -ForegroundColor Gray
+    Write-Host "`nSample predictions (first 10 rows):" -ForegroundColor Gray
     Get-Content "predictions_output.csv" | Select-Object -First 11
 } else {
     Write-Host "   [WARN] predictions_output.csv not found" -ForegroundColor Yellow
@@ -282,7 +282,7 @@ if (Test-Path "predictions_output.csv") {
 # Show feature analysis
 if (Test-Path "cic_features_output.csv") {
     $features = Import-Csv "cic_features_output.csv"
-    Write-Host "`n FEATURE ANALYSIS:" -ForegroundColor Yellow
+    Write-Host "`nFEATURE ANALYSIS:" -ForegroundColor Yellow
     Write-Host "   Raw CIC features extracted: $($features.Count) flows" -ForegroundColor White
     Write-Host "   Feature columns: $(($features[0].PSObject.Properties | Measure-Object).Count)" -ForegroundColor White
 }
@@ -322,9 +322,9 @@ if ($runShap -ne "n" -and $runShap -ne "N") {
     
     try {
         # Change to explainable-ai directory and run the comprehensive analysis
-        Set-Location explainable-ai
+        Set-Location ..\explainable-ai
         $result = C:\Python312\python.exe shap_analysis_complete.py 2>&1
-        Set-Location ..
+        Set-Location ..\ai-model
         
         if ($LASTEXITCODE -eq 0) {
             Write-Host "   [OK] Comprehensive SHAP analysis completed successfully!" -ForegroundColor Green
@@ -348,7 +348,7 @@ if ($runShap -ne "n" -and $runShap -ne "N") {
         }
     } catch {
         Write-Host "   [ERROR] SHAP analysis failed: $_" -ForegroundColor Red
-        Set-Location ..
+        Set-Location ..\ai-model
     }
 } else {
     Write-Host "   [SKIP] SHAP analysis skipped" -ForegroundColor Gray
