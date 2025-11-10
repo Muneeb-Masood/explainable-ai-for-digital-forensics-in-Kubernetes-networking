@@ -1,9 +1,3 @@
-#!/usr/bin/env python3
-"""
-Add K8s metrics to flow data by using average metrics from collection period
-Since flows don't have timestamps, we'll use the average K8s metrics
-"""
-
 import pandas as pd
 
 # Load the data
