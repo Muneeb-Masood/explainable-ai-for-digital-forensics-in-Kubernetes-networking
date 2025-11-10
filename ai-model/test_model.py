@@ -38,7 +38,7 @@ def test_real_data():
         return
     
     # Load the processed data
-    data_path = 'ai-model/final_model_input.csv'
+    data_path = 'ai-model/mapped_features_with_k8s.csv'
     if not os.path.exists(data_path):
         print(f"❌ Data file not found: {data_path}")
         print("Please run the feature mapping and filtering pipeline first")
