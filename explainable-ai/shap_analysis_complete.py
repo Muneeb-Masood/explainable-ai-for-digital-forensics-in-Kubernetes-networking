@@ -17,6 +17,9 @@ import shap
 import matplotlib.pyplot as plt
 import os
 from pathlib import Path
+import base64
+import google.generativeai as genai
+from PIL import Image
 
 # Attack class names
 CLASS_NAMES = {
@@ -26,6 +29,54 @@ CLASS_NAMES = {
     3: "Brute Force Attack",
     4: "SQL Injection"
 }
+
+# Gemini Configuration
+GEMINI_API_KEY = "AIzaSyAO900OAo1SOUEoSKCE4tqeUFlg6wCHIHQ"
+ENABLE_GEMINI_ANALYSIS = True
+
+def initialize_gemini():
+    """Initialize Gemini API"""
+    try:
+        genai.configure(api_key=GEMINI_API_KEY)
+        
+        print("\n📋 Checking available Gemini models...")
+        available_models = []
+        try:
+            for m in genai.list_models():
+                if 'generateContent' in m.supported_generation_methods:
+                    available_models.append(m.name)
+                    print(f"   ✅ Available: {m.name}")
+        except Exception as list_error:
+            print(f"   ⚠️ Could not list models: {list_error}")
+        
+        # Try different model names in order of preference (November 2025 models)
+        model_names = [
+            'models/gemini-2.5-pro',  # Latest Gemini 2.5 Pro
+            'models/gemini-2.5-flash',  # Latest Gemini 2.5 Flash 
+            'models/gemini-2.0-flash',  # Gemini 2.0 Flash as backup
+            'models/gemini-pro-latest',  # Generic latest pro model
+        ]
+        
+        print(f"\n🔄 Trying models in order of preference...")
+        for model_name in model_names:
+            try:
+                model = genai.GenerativeModel(model_name)
+                # Test the model with a simple prompt
+                test_response = model.generate_content("Hello, respond with 'OK' if you're working.")
+                print(f"✅ Gemini API initialized successfully with {model_name}")
+                print(f"   Test response: {test_response.text[:50]}")
+                return model
+            except Exception as model_error:
+                print(f"   ❌ {model_name} failed: {str(model_error)[:100]}")
+                continue
+        
+        print("\n❌ No working Gemini models found")
+        return None
+        
+    except Exception as e:
+        print(f"⚠️ Gemini API initialization failed: {e}")
+        print("📄 Continuing with text-only analysis...")
+        return None
 
 def load_model_and_data():
     """Load the 36-feature model and feature list"""
@@ -379,6 +430,189 @@ def analyze_dataset_3_merged():
     return shap_values, X_features
 
 
+def generate_gemini_forensic_report(shap_results, output_dir, gemini_model=None):
+    """Generate comprehensive forensic report using Gemini AI with SHAP visualizations"""
+    
+    if not ENABLE_GEMINI_ANALYSIS or gemini_model is None:
+        print("🔄 Skipping Gemini analysis (API not available)")
+        return
+    
+    print("\n" + "="*80)
+    print("🤖 GEMINI AI FORENSIC ANALYSIS")
+    print("="*80)
+    print("Generating natural language explanations from SHAP visualizations...")
+    
+    try:
+        # Load and encode SHAP images
+        image_files = [
+            'shap_summary_Collected_Attack.png',
+            'shap_bar_Collected_Attack.png',
+            'shap_comparison_training_vs_collected.png'
+        ]
+        
+        images = []
+        for img_file in image_files:
+            img_path = f'{output_dir}/{img_file}'
+            if os.path.exists(img_path):
+                try:
+                    img = Image.open(img_path)
+                    images.append(img)
+                    print(f"   📊 Loaded: {img_file}")
+                except Exception as e:
+                    print(f"   ⚠️ Could not load {img_file}: {e}")
+        
+        # Create comprehensive forensic prompt
+        forensic_prompt = """
+        You are a cybersecurity forensic analyst examining SHAP (SHapley Additive exPlanations) visualizations 
+        from a Kubernetes network intrusion detection system. 
+        
+        CONTEXT:
+        - A Slowloris DoS attack was executed against a Kubernetes cluster
+        - The attack was detected by an AI model with 95.8% accuracy
+        - SHAP analysis was performed to explain why the attack was detected
+        - You are analyzing the SHAP visualizations to create a forensic report
+        
+        ANALYSIS TASK:
+        Analyze these SHAP visualizations and provide a comprehensive forensic report covering:
+        
+        1. EXECUTIVE SUMMARY
+           - What type of attack was detected
+           - Confidence level and detection accuracy
+           - Key indicators that led to detection
+        
+        2. TECHNICAL ANALYSIS
+           - Top 5 most important features from SHAP analysis
+           - What these features indicate about the attack pattern
+           - How they differ from normal network behavior
+        
+        3. ATTACK CHARACTERISTICS
+           - Slowloris attack methodology explanation
+           - Why these specific network features reveal the attack
+           - Timeline and pattern analysis
+        
+        4. FORENSIC EVIDENCE
+           - Network artifacts that support the detection
+           - Feature values that indicate malicious behavior
+           - Comparison with baseline/normal traffic
+        
+        5. RECOMMENDATIONS
+           - Immediate response actions
+           - Long-term security improvements
+           - Monitoring enhancements
+        
+        Please provide a professional, detailed forensic analysis suitable for:
+        - Security incident reports
+        - Legal documentation
+        - Executive briefings
+        - Technical team analysis
+        
+        Focus on translating the technical SHAP analysis into actionable cybersecurity insights.
+        """
+        
+        if images:
+            print(f"   🔍 Analyzing {len(images)} SHAP visualizations with Gemini...")
+            
+            # Try with images first
+            try:
+                response = gemini_model.generate_content([forensic_prompt] + images)
+                gemini_report = response.text
+            except Exception as img_error:
+                print(f"   ⚠️ Image analysis failed: {img_error}")
+                print("   📝 Falling back to text-based analysis...")
+                # Fallback: text-only analysis
+                response = gemini_model.generate_content(forensic_prompt + """
+                
+                Note: SHAP visualizations could not be processed directly. 
+                Based on the context of Slowloris attack detection in Kubernetes, 
+                please provide a comprehensive forensic analysis framework.
+                """)
+                gemini_report = response.text
+        else:
+            print("   📝 Generating text-based analysis...")
+            # Text-only analysis
+            response = gemini_model.generate_content(forensic_prompt)
+            gemini_report = response.text
+        
+        # Save Gemini forensic report
+        report_path = f'{output_dir}/Gemini_Forensic_Analysis.md'
+        with open(report_path, 'w', encoding='utf-8') as f:
+            f.write("# 🔍 GEMINI AI FORENSIC ANALYSIS REPORT\n\n")
+            f.write("## Generated by Google Gemini AI from SHAP Visualizations\n\n")
+            f.write("---\n\n")
+            f.write(gemini_report)
+            f.write("\n\n---\n\n")
+            f.write("*Report generated using Google Gemini AI analysis of SHAP explainability visualizations*\n")
+            f.write(f"*Analysis timestamp: {pd.Timestamp.now()}*\n")
+        
+        print(f"   ✅ Gemini forensic report saved: {report_path}")
+        
+        print("\n📊 GEMINI ANALYSIS COMPLETE!")
+        print(f"   📄 Forensic Report: {report_path}")
+        
+    except Exception as e:
+        print(f"   ❌ Gemini analysis failed: {e}")
+        print("   📄 Continuing with standard SHAP analysis...")
+
+
+def generate_incident_response_plan(output_dir, gemini_model=None):
+    """Generate actionable incident response plan using Gemini"""
+    
+    if not ENABLE_GEMINI_ANALYSIS or gemini_model is None:
+        return
+    
+    print("\n🚨 Generating Incident Response Plan...")
+    
+    try:
+        ir_prompt = """
+        Based on the Slowloris DoS attack detected in the Kubernetes environment, 
+        create a detailed INCIDENT RESPONSE PLAN with immediate and long-term actions:
+        
+        ## IMMEDIATE ACTIONS (0-4 hours)
+        - Detection verification steps
+        - Traffic analysis procedures  
+        - System isolation decisions
+        - Stakeholder notifications
+        
+        ## SHORT-TERM RESPONSE (4-24 hours)
+        - Attack mitigation strategies
+        - System restoration procedures
+        - Evidence preservation
+        - Communication protocols
+        
+        ## LONG-TERM IMPROVEMENTS (1-30 days)
+        - Security hardening measures
+        - Monitoring enhancements
+        - Policy updates
+        - Training requirements
+        
+        ## COMPLIANCE CONSIDERATIONS
+        - Regulatory reporting requirements
+        - Legal documentation needs
+        - Audit trail maintenance
+        
+        Format as actionable checklists with specific commands and procedures where applicable.
+        Focus on Kubernetes and container security best practices.
+        """
+        
+        response = gemini_model.generate_content(ir_prompt)
+        ir_plan = response.text
+        
+        ir_path = f'{output_dir}/Incident_Response_Plan.md'
+        with open(ir_path, 'w', encoding='utf-8') as f:
+            f.write("# 🚨 INCIDENT RESPONSE PLAN\n\n")
+            f.write("## Kubernetes Slowloris DoS Attack Response\n\n")
+            f.write("---\n\n")
+            f.write(ir_plan)
+            f.write("\n\n---\n\n")
+            f.write("*Generated using AI analysis based on detected attack patterns*\n")
+            f.write(f"*Created: {pd.Timestamp.now()}*\n")
+        
+        print(f"   ✅ Incident Response Plan saved: {ir_path}")
+        
+    except Exception as e:
+        print(f"   ⚠️ Could not generate IR plan: {e}")
+
+
 def generate_summary_report():
     """Generate a comprehensive summary report"""
     output_dir = 'outputs'
@@ -480,24 +714,44 @@ def main():
     print("  1. Training dataset (what model learned)")
     print("  2. Collected attack data (our real capture)")
     print("  3. Merged analysis (comparison)")
+    if ENABLE_GEMINI_ANALYSIS:
+        print("  4. 🤖 Gemini AI forensic report generation")
     print("\n⏱️  Estimated time: 5-10 minutes")
     print("="*80)
     
+    # Initialize Gemini (optional)
+    gemini_model = None
+    if ENABLE_GEMINI_ANALYSIS:
+        gemini_model = initialize_gemini()
+    
     try:
-        # Run all three analyses
+        # Run all three SHAP analyses
+        print("\n🔬 Running SHAP Analysis...")
         analyze_dataset_1_training()
-        analyze_dataset_2_collected()
+        analyze_dataset_2_collected() 
         analyze_dataset_3_merged()
         
-        # Generate summary report
+        # Generate standard summary report
         generate_summary_report()
+        
+        # Generate Gemini AI forensic analysis (only comprehensive report)
+        if gemini_model:
+            output_dir = 'outputs'
+            generate_gemini_forensic_report(None, output_dir, gemini_model)
+            # Removed: generate_incident_response_plan() and executive_summary()
         
         print("\n" + "="*80)
         print("✅ ALL ANALYSES COMPLETE!")
         print("="*80)
-        print("\n📂 Check outputs/ for all visualizations")
-        print("📄 Read SHAP_Analysis_Report.txt for detailed summary")
-        print("\n🎉 Explainable AI analysis finished successfully!")
+        print("\n📂 Standard SHAP Analysis:")
+        print("   📊 Check outputs/ for all SHAP visualizations")
+        print("   📄 Read SHAP_Analysis_Report.txt for technical details")
+        
+        if gemini_model:
+            print("\n🤖 Gemini AI Analysis:")
+            print("   📋 Gemini_Forensic_Analysis.md - Comprehensive forensic report")
+        
+        print("\n🎉 Complete XAI + AI-Enhanced forensic analysis finished!")
         
     except Exception as e:
         print(f"\n❌ Error during analysis: {str(e)}")
