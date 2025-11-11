@@ -51,10 +51,11 @@ def initialize_gemini():
         
         # Try different model names in order of preference (November 2025 models)
         model_names = [
-            'models/gemini-2.5-pro',  # Latest Gemini 2.5 Pro
-            'models/gemini-2.5-flash',  # Latest Gemini 2.5 Flash 
-            'models/gemini-2.0-flash',  # Gemini 2.0 Flash as backup
-            'models/gemini-pro-latest',  # Generic latest pro model
+            'gemini-2.5-pro',  # Latest Gemini 2.5 Pro
+            'gemini-2.5-pro-vision',  # Latest Gemini 2.5 Pro with Vision 
+            'gemini-1.5-pro',  # Fallback to 1.5 Pro
+            'models/gemini-2.5-pro',  # With models/ prefix
+            'models/gemini-1.5-pro',  # Fallback with prefix
         ]
         
         print(f"\n🔄 Trying models in order of preference...")

@@ -340,8 +340,10 @@ if ($runShap -ne "n" -and $runShap -ne "N") {
             Write-Host "   Merged Comparison Analysis:" -ForegroundColor Yellow
             Write-Host "     - shap_summary_Merged_Analysis.png" -ForegroundColor Gray
             Write-Host "     - shap_comparison_training_vs_collected.png" -ForegroundColor Gray
-            Write-Host "   Summary Report:" -ForegroundColor Yellow
+            Write-Host "   Technical Reports:" -ForegroundColor Yellow
             Write-Host "     - SHAP_Analysis_Report.txt" -ForegroundColor Gray
+            Write-Host "   AI-Enhanced Forensic Analysis:" -ForegroundColor Magenta
+            Write-Host "     - Gemini_Forensic_Analysis.md - Comprehensive forensic report" -ForegroundColor Gray
         } else {
             Write-Host "   [WARN] SHAP analysis completed with warnings" -ForegroundColor Yellow
             Write-Host "   Output: $result" -ForegroundColor Gray
