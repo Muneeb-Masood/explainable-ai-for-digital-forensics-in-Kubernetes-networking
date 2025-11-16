@@ -50,4 +50,6 @@ logs/
 
 # Markdown files
 *.md
-*.md
+
+# PCAP files
+*.pacp
