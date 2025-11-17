@@ -109,6 +109,23 @@ Write-Host "`nCurrent status:" -ForegroundColor Yellow
 kubectl get hpa php-apache
 kubectl get pods -l app=php-apache
 
+# Immediately delete any load-generator pods after attack
+Write-Host "\nChecking for load-generator pod(s) after attack..." -ForegroundColor Gray
+$loadGenPods = kubectl get pods -l app=load-generator --no-headers 2>$null
+if ($loadGenPods) {
+    Write-Host "Deleting load-generator pod(s) after attack..." -ForegroundColor Yellow
+    kubectl delete pod -l app=load-generator 2>$null
+    Write-Host "Load-generator pod(s) deleted" -ForegroundColor Green
+} else {
+    Write-Host "No load-generator pod found after attack" -ForegroundColor Gray
+}
+
+# Also delete load-generator deployment and replicaset to prevent pod recreation
+Write-Host "Deleting load-generator deployment and replicaset (if present)..." -ForegroundColor Yellow
+kubectl delete deployment load-generator -n default 2>$null
+kubectl delete replicaset -l app=load-generator -n default 2>$null
+Write-Host "Load-generator deployment and replicaset deleted (if they existed)" -ForegroundColor Green
+
     # Manual PCAP save step
     Write-Host "`n============================================================" -ForegroundColor Yellow
     Write-Host "MANUAL STEP: SAVE WIRESHARK CAPTURE" -ForegroundColor Yellow
@@ -373,6 +390,16 @@ if ($runCleanup -ne "n" -and $runCleanup -ne "N") {
     Write-Host "`nCleaning up Kubernetes resources..." -ForegroundColor Yellow
 
     # Delete deployment
+        # Delete load-generator pod if it exists
+        Write-Host "Checking for load-generator pod..." -ForegroundColor Gray
+        $loadGenPods = kubectl get pods -l app=load-generator --no-headers 2>$null
+        if ($loadGenPods) {
+            Write-Host "Deleting load-generator pod(s)..." -ForegroundColor Yellow
+            kubectl delete pod -l app=load-generator 2>$null
+            Write-Host "Load-generator pod(s) deleted" -ForegroundColor Green
+        } else {
+            Write-Host "No load-generator pod found" -ForegroundColor Gray
+        }
     try {
         kubectl delete deployment php-apache 2>$null
         if ($LASTEXITCODE -eq 0) {
@@ -384,16 +411,19 @@ if ($runCleanup -ne "n" -and $runCleanup -ne "N") {
         Write-Host "Error deleting deployment: $_" -ForegroundColor Yellow
     }
 
-    # Delete HPA
-    try {
-        kubectl delete hpa php-apache-hpa 2>$null
-        if ($LASTEXITCODE -eq 0) {
-            Write-Host "Deleted HPA php-apache-hpa" -ForegroundColor Green
-        } else {
-            Write-Host "HPA php-apache-hpa not found or already deleted" -ForegroundColor Yellow
+
+    # Delete HPA (handle both possible names)
+    foreach ($hpaName in @('php-apache', 'php-apache-hpa')) {
+        try {
+            kubectl delete hpa $hpaName 2>$null
+            if ($LASTEXITCODE -eq 0) {
+                Write-Host "Deleted HPA $hpaName" -ForegroundColor Green
+            } else {
+                Write-Host "HPA $hpaName not found or already deleted" -ForegroundColor Yellow
+            }
+        } catch {
+            Write-Host "Error deleting HPA ${hpaName}: $_" -ForegroundColor Yellow
         }
-    } catch {
-        Write-Host "Error deleting HPA: $_" -ForegroundColor Yellow
     }
 
     # Delete service
