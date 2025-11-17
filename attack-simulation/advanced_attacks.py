@@ -365,7 +365,7 @@ def main():
     print("="*60)
     print("ADVANCED ATTACK SIMULATION")
     print("="*60)
-    print("\n⚠️  WARNING: For educational purposes only!")
+    print("\n[!] WARNING: For educational purposes only!")
     print("Only attack systems you own or have permission to test.\n")
 
     parser = argparse.ArgumentParser(description="Run dataset-aligned attack simulations (Slowloris, SQLi, Brute Force)")
