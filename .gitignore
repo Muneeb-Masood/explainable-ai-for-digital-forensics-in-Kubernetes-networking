@@ -55,4 +55,4 @@ logs/
 *.pacp
 
 # XAI explalnations images
-./explainable-ai/outputs/
+explainable-ai/outputs/
