@@ -109,27 +109,34 @@ Write-Host "`nCurrent status:" -ForegroundColor Yellow
 kubectl get hpa php-apache
 kubectl get pods -l app=php-apache
 
-# Manual PCAP save step
-Write-Host "`n============================================================" -ForegroundColor Yellow
-Write-Host "MANUAL STEP: SAVE WIRESHARK CAPTURE" -ForegroundColor Yellow
-Write-Host "============================================================" -ForegroundColor Yellow
-Write-Host ""
-Write-Host "INSTRUCTIONS:" -ForegroundColor Cyan
-Write-Host "   1. In Wireshark, STOP the capture (Ctrl+E)" -ForegroundColor White
-Write-Host "   2. Save the capture file as: ai-model\latest.pcap" -ForegroundColor White
-Write-Host "   3. Make sure the file is saved in the ai-model directory" -ForegroundColor White
-Write-Host ""
-Write-Host "Save location: ai-model\latest.pcap" -ForegroundColor Gray
-Write-Host ""
-Write-Host "Press ENTER when you have saved the PCAP file..." -ForegroundColor Green
-Read-Host
+    # Manual PCAP save step
+    Write-Host "`n============================================================" -ForegroundColor Yellow
+    Write-Host "MANUAL STEP: SAVE WIRESHARK CAPTURE" -ForegroundColor Yellow
+    Write-Host "============================================================" -ForegroundColor Yellow
+    Write-Host ""
+    Write-Host "INSTRUCTIONS:" -ForegroundColor Cyan
+    Write-Host "   1. In Wireshark, STOP the capture (Ctrl+E)" -ForegroundColor White
+    Write-Host "   2. Save the capture file as: ai-model\latest.pcap" -ForegroundColor White
+    Write-Host "   3. Make sure the file is saved in the ai-model directory" -ForegroundColor White
+    Write-Host ""
+    Write-Host "Save location: ai-model\latest.pcap" -ForegroundColor Gray
+    Write-Host ""
+    Write-Host "Press ENTER when you have saved the PCAP file..." -ForegroundColor Green
+    Read-Host
 
-# AI Analysis Workflow
-Write-Host "`n============================================================" -ForegroundColor Cyan
-Write-Host "AI ANALYSIS & FEATURE EXTRACTION WORKFLOW" -ForegroundColor Cyan
-Write-Host "============================================================" -ForegroundColor Cyan
 
-Push-Location ai-model
+    # Stop metrics collection job (if running)
+    if ($metricsJob) {
+        Stop-Job $metricsJob -ErrorAction SilentlyContinue
+        Remove-Job $metricsJob -ErrorAction SilentlyContinue
+    }
+
+    # AI Analysis Workflow
+    Write-Host "`n============================================================" -ForegroundColor Cyan
+    Write-Host "AI ANALYSIS & FEATURE EXTRACTION WORKFLOW" -ForegroundColor Cyan
+    Write-Host "============================================================" -ForegroundColor Cyan
+
+    Push-Location ai-model
 
 # Step 3a: Extract CIC features from PCAP
 Write-Host "`n[Step 3a] Extracting CIC features from PCAP..." -ForegroundColor Yellow
@@ -481,28 +488,7 @@ if ($runCleanup -ne "n" -and $runCleanup -ne "N") {
 
 Pop-Location
 
-# Wait for metric collection to finish
-if (-not $SkipPrometheus) {
-    if ($metricsJob) {
-        Write-Host "`n[6/6] Waiting for metric collection to complete..." -ForegroundColor Yellow
-        $remaining = ($MetricDuration - $Duration)
-        if ($remaining -gt 0) {
-            Write-Host "   Collecting metrics for $remaining more seconds..." -ForegroundColor Gray
-            Wait-Job -Job $metricsJob -Timeout $remaining | Out-Null
-        }
-        
-        # Check if collection completed
-        $state = (Get-Job -Id $metricsJob.Id).State
-        if ($state -eq "Completed") {
-            Write-Host "   [OK] Metric collection complete!" -ForegroundColor Green
-        } else {
-            Write-Host "   [WARN] Metric collection still running..." -ForegroundColor Yellow
-        }
-        
-        Stop-Job $metricsJob -ErrorAction SilentlyContinue
-        Remove-Job $metricsJob -ErrorAction SilentlyContinue
-    }
-}
+
 
 
 # Cleanup port-forwards
