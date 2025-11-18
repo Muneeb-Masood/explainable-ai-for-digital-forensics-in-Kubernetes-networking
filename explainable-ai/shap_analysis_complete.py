@@ -31,7 +31,7 @@ CLASS_NAMES = {
 }
 
 # Gemini Configuration
-GEMINI_API_KEY = "AIzaSyAO900OAo1SOUEoSKCE4tqeUFlg6wCHIHQ"
+GEMINI_API_KEY = "AIzaSyDtw64Xj-qvxfhvShNLXQf7rnU9KqW6Jp0"
 ENABLE_GEMINI_ANALYSIS = True
 
 def initialize_gemini():
@@ -551,7 +551,9 @@ def generate_gemini_forensic_report(shap_results, output_dir, gemini_model=None)
         print(f"   📄 Forensic Report: {report_path}")
         
     except Exception as e:
+        import traceback
         print(f"   ❌ Gemini analysis failed: {e}")
+        traceback.print_exc()
         print("   📄 Continuing with standard SHAP analysis...")
 
 
@@ -722,8 +724,11 @@ def main():
     
     # Initialize Gemini (optional)
     gemini_model = None
+    print(f"DEBUG: ENABLE_GEMINI_ANALYSIS is {ENABLE_GEMINI_ANALYSIS}")
     if ENABLE_GEMINI_ANALYSIS:
+        print("DEBUG: About to initialize Gemini...")
         gemini_model = initialize_gemini()
+        print(f"DEBUG: Gemini model after initialization is: {gemini_model}")
     
     try:
         # Run all three SHAP analyses
