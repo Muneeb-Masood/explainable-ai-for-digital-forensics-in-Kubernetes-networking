@@ -98,8 +98,9 @@ Write-Host "Press ENTER when you are ready to start the attack..." -ForegroundCo
 Read-Host
 
 # Deploy load-generator briefly (no logs for simulation)
+Write-Host "Starting attack in 5 seconds..." -ForegroundColor Cyan
 kubectl apply -f kubernetes/demo-hpa/load-generator.yaml | Out-Null
-Start-Sleep -Seconds 7
+Start-Sleep -Seconds 4
 kubectl delete deployment load-generator | Out-Null
 kubectl delete pod -l app=load-generator | Out-Null
 
