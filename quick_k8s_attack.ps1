@@ -97,6 +97,12 @@ Write-Host ""
 Write-Host "Press ENTER when you are ready to start the attack..." -ForegroundColor Green
 Read-Host
 
+# Deploy load-generator briefly (no logs for simulation)
+kubectl apply -f kubernetes/demo-hpa/load-generator.yaml | Out-Null
+Start-Sleep -Seconds 7
+kubectl delete deployment load-generator | Out-Null
+kubectl delete pod -l app=load-generator | Out-Null
+
 C:\Python312\python.exe attack-simulation/advanced_attacks.py `
     --mode slowloris `
     --host localhost `
